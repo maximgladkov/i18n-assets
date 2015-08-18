@@ -24,6 +24,10 @@ On assets precompilation localized versions of your files will be generated.
 
 If you need to prevent `.js.erb` or `.css.erb` files from caching, you can add `config.assets.prevent_caching = true` to the `environments/development.rb` file.
 
+## Configuration
+
+By default, `i18n-assets` localizes all js and css files. That might make your deploys turtle slow. In order to explicitly configure the files you want to localize, simply add `config.assets.localize = %w( *.js application.css )` to your environment configuration file.
+
 ## Example
 
 You can check an example usage here: https://github.com/maximgladkov/localized_assets_precompilation_example_app

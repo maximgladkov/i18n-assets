@@ -2,10 +2,17 @@ unless defined?(Sprockets::LOCALIZABLE_ASSETS_REGEX)
   require 'sprockets'
 
   module Sprockets
-    LOCALIZABLE_ASSETS_EXT = %w( js css )
-    LOCALIZABLE_ASSETS_REGEX = Regexp.new("\\.(?:#{ LOCALIZABLE_ASSETS_EXT * '|' })")
-    LOCALIZABLE_COMPILABLE_ASSETS_REGEX = Regexp.new("\\.(?:#{ LOCALIZABLE_ASSETS_EXT * '|' })\\..+$")
+    DEFAULT_LOCALIZABLE_ASSETS_PATTERN = %w( *.js *.css )
     GLOBAL_ASSET_REGEX = /^(https?)?:\/\//
+
+    def self.localizable?(path)
+      path = path.gsub(Rails.root.to_s, '')
+
+      patterns = Rails.configuration.assets.localize || DEFAULT_LOCALIZABLE_ASSETS_PATTERN
+      patterns.any? do |pattern|
+        File.fnmatch?(pattern, path)
+      end
+    end
 
     module Helpers
       module RailsHelper
@@ -16,7 +23,7 @@ unless defined?(Sprockets::LOCALIZABLE_ASSETS_REGEX)
         def asset_path(source, options = {})
           path = asset_path_without_locale(source, options)
 
-          if !digest_assets? && path =~ LOCALIZABLE_ASSETS_REGEX
+          if !digest_assets? && Sprockets.localizable?(path)
             separator = path =~ /\?/ ? '&' : '?'
             "#{ path }#{ separator }t=#{ Time.now.to_i }"
           else
@@ -42,7 +49,7 @@ unless defined?(Sprockets::LOCALIZABLE_ASSETS_REGEX)
             end
           end
 
-          if logical_path =~ LOCALIZABLE_ASSETS_REGEX
+          if Sprockets.localizable?(logical_path)
             I18n.available_locales.each do |locale|
               I18n.locale = locale
               process.call
@@ -66,7 +73,7 @@ unless defined?(Sprockets::LOCALIZABLE_ASSETS_REGEX)
       # add locale for css and js files
       def logical_path
         path = logical_path_without_locale
-        if !Rails.env.development? && path =~ LOCALIZABLE_ASSETS_REGEX
+        if !Rails.env.development? && Sprockets.localizable?(path)
           "#{ I18n.locale }/#{ path }"
         else
           path
@@ -77,7 +84,7 @@ unless defined?(Sprockets::LOCALIZABLE_ASSETS_REGEX)
 
         alias_method :dependency_fresh_without_check?, :dependency_fresh?
         def dependency_fresh?(environment, dep)
-          return false if Rails.configuration.assets.prevent_caching && dep.pathname.to_s =~ LOCALIZABLE_COMPILABLE_ASSETS_REGEX
+          return false if Rails.configuration.assets.prevent_caching && Sprockets.localizable?(dep.pathname.to_s)
           dependency_fresh_without_check?(environment, dep)
         end
 
@@ -133,7 +140,9 @@ unless defined?(Sprockets::LOCALIZABLE_ASSETS_REGEX)
         end
 
         def file_localizable?(source, options)
-          source =~ Sprockets::LOCALIZABLE_ASSETS_REGEX || Sprockets::LOCALIZABLE_ASSETS_EXT.include?(options.try(:[], :ext))
+          ext = options.try(:[], :ext)
+          source = "#{ source }.#{ ext }" if ext && !source.ends_with?(".#{ ext }")
+          Sprockets.localizable?(source)
         end
 
         def file_already_localized?(source)
