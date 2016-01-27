@@ -50,7 +50,7 @@ unless defined?(Sprockets::LOCALIZABLE_ASSETS_REGEX)
           end
 
           if Sprockets.localizable?(logical_path)
-            I18n.available_locales.each do |locale|
+            (Rails.configuration.assets.locales || I18n.available_locales).each do |locale|
               I18n.locale = locale
               process.call
             end
@@ -109,7 +109,7 @@ unless defined?(Sprockets::LOCALIZABLE_ASSETS_REGEX)
 
         def extract_locale(path)
           locale = path[/^\/([a-z\-_]+?)\//, 1]
-          if I18n.available_locales.map(&:to_s).include? locale
+          if (Rails.configuration.assets.locales || I18n.available_locales).map(&:to_s).include? locale
             locale
           else
             nil

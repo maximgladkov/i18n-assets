@@ -28,6 +28,8 @@ If you need to prevent `.js.erb` or `.css.erb` files from caching, you can add `
 
 By default, `i18n-assets` localizes all js and css files. That might make your deploys turtle slow. In order to explicitly configure the files you want to localize, simply add `config.assets.localize = %w( *.js application.css )` to your environment configuration file.
 
+In case you want to precompile a subset of locales instead all `I18n.available_locales` ones, you can add `config.assets.locales = %w[ en lv ru ]` to your environment configuration file.
+
 ## Example
 
 You can check an example usage here: https://github.com/maximgladkov/localized_assets_precompilation_example_app
